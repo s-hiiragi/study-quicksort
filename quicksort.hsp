@@ -146,6 +146,33 @@
 
 	#global
 
+/*
+®—‚·‚é‚Æquicksort‚ÍˆÈ‰º‚Ì‚æ‚¤‚Èˆ—‚Æ‚È‚é
+‚±‚Á‚¿‚Ì•û‚ª•ª‚©‚è‚â‚·‚¢
+*/
+	#module mod_quicksort2
+
+	#deffunc quicksort2 array a, int start, int len, local p
+		if len <= 1 : return
+
+		p = start
+		repeat len-1, start+1
+			if a.cnt <= a.p {
+				pivot = a.p
+				a.p = a.cnt
+				a.cnt = a.(p+1)
+				a.(p+1) = pivot
+				p = p+1
+			}
+		loop
+
+		quicksort2 a, start, p - start
+		quicksort2 a, p+1,   (start+len) - (p+1)
+
+		return
+
+	#global
+
 
 	randomize
 	n = 10
@@ -168,7 +195,8 @@
 		gosub *init_array
 		mes strf("‰Šúó‘Ô: %s", array_to_str(a, 0, n))
 
-		quicksort a, 0, n
+		;quicksort a, 0, n
+		quicksort2 a, 0, n
 		mes strf("ÅIó‘Ô: %s", array_to_str(a, 0, n))
 
 		assert array_equals(a, ans)
