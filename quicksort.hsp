@@ -1,0 +1,185 @@
+	#module mod_utility
+
+	; 配列の要素の順序をシャッフルする
+	;
+	; 引数
+	;   a  配列
+	;
+	#deffunc shuffle array a, local n, local k, local t
+		n = length(a)
+		repeat n
+			k = rnd(n)
+			t = a.cnt
+			a.cnt = a.k
+			a.k = t
+		loop
+		return
+
+	; 配列の指定範囲を文字列化する (関数)
+	;
+	; 配列の開始位置から指定された長さの範囲を文字列化する
+	;
+	; 開始位置が範囲外の場合は"[]"を返す
+	;
+	; 引数
+	;   a      配列
+	;   start  開始位置(0オリジン)
+	;   len    長さ
+	;
+	; 戻り値
+	;   文字列(例: "[1, 2, 3]")
+	;
+	#defcfunc array_to_str array a, int start, int len, local n, local s
+		assert 0 <= start
+		assert 0 <= len && len <= length(a)
+
+		s = ""
+		repeat len, start
+			s += str(a.cnt)
+			if cnt+1 < start+len : s += ", "
+		loop
+		return "[" + s + "]"
+
+	; 2つの配列の各要素が等しいか比較する (関数)
+	;
+	; 長さが等しくない場合は不一致となる
+	;
+	; 引数
+	;   a1  配列1
+	;   a2  配列2
+	;
+	; 戻り値
+	;   0  不一致
+	;   1  一致
+	;
+	#defcfunc array_equals array a1, array a2
+		n1 = length(a1)
+		n2 = length(a2)
+		if n1 != n2 : return 0
+		repeat n1
+			if a1.cnt != a2.cnt : return 0
+		loop
+		return 1
+
+	#global
+
+
+	#module mod_quicksort
+
+	; ピボットより小さいか等しい数と、大きい数を、ピボットの左右に分離する
+	;
+	; ピボットは配列の先頭の要素とする
+	;
+	; 配列の部分配列(指定範囲)の要素をピボットより小さいか等しい数の列、ピボット、
+	; ピボットより大きい数の列の順に並べ替える
+	;
+	; 引数
+	;   a       配列
+	;   start   部分配列の開始位置(0オリジン)
+	;   len     部分配列の長さ
+	;
+	; 戻り値
+	;   ピボットの位置(0オリジン)
+	;
+	; メモ
+	;   ピボットが配列の先頭の要素であることを前提としたアルゴリズムとなってしまっている
+	;
+	#deffunc separate_smaller_or_equal_and_lager array a, int start, int len, local p, local pivot
+		assert 0 <= start && start < length(a)
+		assert 2 <= len && len <= length(a)
+		assert start + len <= length(a)
+
+		p = start
+		repeat len-1, start+1
+			if a.cnt <= a.p {
+				; cnt番目の要素をp番目へ移動する
+				pivot = a.p
+				a.p = a.cnt
+				; p+1番目の要素をcnt番目へ移動する
+				a.cnt = a.(p+1)
+				; ピボットをp+1番目に移動する
+				a.(p+1) = pivot
+				p = p+1
+			}
+		loop
+
+		assert start <= p && p < start + len
+
+		; ピボットより小さいか等しい数の列の長さ + ピボットより大きい数の列の長さ + 1(ピボット)
+		; が部分配列の長さに等しいこと
+		assert (p - start) + ((start + len) - (p+1)) + 1 == len
+
+		; 部分配列の先頭からピボットの左隣までの要素は
+		; ピボットより小さいか等しい数の列となっていること
+		repeat p - start, start
+			assert a.cnt < a.p
+		loop
+
+		; ピボットの右隣から部分配列の末尾までの要素は
+		; ピボットより大きい数の列となっていること
+		repeat (start + len) - (p+1), p+1
+			assert a.cnt >= a.p
+		loop
+
+		return p
+
+	; 配列の指定範囲をクイックソートを用いてソートする
+	;
+	; 引数
+	;   a      配列
+	;   start  開始位置(0オリジン)
+	;   len    長さ
+	;
+	#deffunc quicksort array a, int start, int len, local p
+		mes strf("quicksort: a=%s, start=%d, len=%d", array_to_str(a, start, len), start, len)
+
+		if len <= 1 : return ; ソート不要
+
+		separate_smaller_or_equal_and_lager a, start, len
+		p = stat
+		mes strf("  分離結果: a=%s, pivot=%d", array_to_str(a, start, len), a.p)
+
+		; ピボットより小さいか等しい数の列と、ピボットより大きい数の列をソートする
+		quicksort a, start, p - start
+		quicksort a, p+1,   (start+len) - (p+1)
+		return
+
+	#global
+
+
+	randomize
+	n = 10
+	dim a, n
+
+	; ソート結果の期待値
+	dim ans, n
+	repeat n
+		ans.cnt = cnt + 1
+	loop
+
+	; クイックソートをk回テストする
+	k = 10000
+	repeat k, 1
+		title strf("%d/%d", cnt, k)
+
+		cls
+		pos 0, 0
+
+		gosub *init_array
+		mes strf("初期状態: %s", array_to_str(a, 0, n))
+
+		quicksort a, 0, n
+		mes strf("最終状態: %s", array_to_str(a, 0, n))
+
+		assert array_equals(a, ans)
+
+		await 0
+	loop
+	stop
+
+*init_array
+	repeat n
+		a.cnt = cnt + 1
+	loop
+	shuffle a
+	return
